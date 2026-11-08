@@ -1,0 +1,53 @@
+name: Android APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout emulator source
+        uses: actions/checkout@v4
+        with:
+          repository: jpd002/Play-
+          ref: master
+          path: Play-
+          submodules: recursive
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android tools
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;29.0.14206865" "cmake;3.31.1"
+
+      - name: Configure Android SDK
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > Play-/build_android/local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/29.0.14206865" >> Play-/build_android/local.properties
+
+      - name: Build APK
+        run: |
+          cd Play-/build_android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: A14-PS2-Emulator-APK
+          path: Play-/build_android/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
